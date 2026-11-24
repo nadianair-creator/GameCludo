@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cluedo — The Tudor Mansion Mystery</title>
+<style>
+  :root {
+    --mahogany: #14110f;
+    --walnut: #1f1a17;
+    --parchment: #f5ecd8;
+    --parchment-aged: #e4d5b7;
+    --ink: #221c18;
+    --brass: #cfa349;
+    --crimson: #8f2424;
+    --emerald: #266341;
+    --border: #3d332c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Georgia', serif;
+    background: var(--mahogany);
+    color: var(--parchment);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+  header {
+    background: #0d0a09;
+    border-bottom: 2px solid var(--brass);
+    padding: 12px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  header h1 {
+    font-size: 1.4rem;
+    color: var(--brass);
+    letter-spacing: 1.5px;
+  }
+  .header-actions button {
+    background: var(--walnut);
+    color: var(--parchment);
+    border: 1px solid var(--brass);
+    padding: 6px 14px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: inherit;
+    margin-left: 8px;
+  }
+  .header-actions button:hover {
+    background: var(--brass);
+    color: var(--ink);
+  }
+
+  /* MAIN LAYOUT */
+  main {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 16px;
+    padding: 16px;
+    max-width: 1280px;
+    width: 100%;
+    margin: 0 auto;
+    flex: 1;
+  }
+
+  /* LEFT PANEL: BOARD + CONTROLS + LOG */
+  .board-section {
+    background: var(--walnut);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .turn-bar {
+    width: 100%;
+    background: #120f0d;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin-bottom: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .turn-info strong { color: var(--brass); font-size: 1rem; }
+  .turn-info div { font-size: 0.85rem; color: #cbbba0; margin-top: 2px; }
+  .btn-group { display: flex; gap: 6px; flex-wrap: wrap; }
+  button.btn-gold {
+    background: var(--brass);
+    color: var(--ink);
+    border: none;
+    padding: 8px 12px;
+    font-weight: bold;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  button.btn-dark {
+    background: #2c241f;
+    color: var(--parchment);
+    border: 1px solid var(--brass);
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  button.btn-crimson {
+    background: var(--crimson);
+    color: #fff;
+    border: none;
+    padding: 8px 12px;
+    font-weight: bold;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  button:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  /* 9x9 MANSION GRID */
+  .mansion-wrap { position: relative; }
+  .mansion-grid {
+    display: grid;
+    grid-template-columns: repeat(9, 56px);
+    grid-template-rows: repeat(9, 56px);
+    gap: 2px;
+    background: #2d2520;
+    padding: 6px;
+    border: 3px solid var(--brass);
+    border-radius: 4px;
+  }
+  .tile {
+    background: #d9cbb2;
+    color: var(--ink);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    text-align: center;
+    border-radius: 2px;
+    position: relative;
+    user-select: none;
+    padding: 2px;
+  }
+  .tile.room {
+    background: #332820;
+    color: var(--parchment);
+    border: 1px solid #755c29;
+    font-weight: bold;
+  }
+  .tile.stairs {
+    background: var(--crimson);
+    color: #fff;
+    border: 2px solid var(--brass);
+    font-weight: bold;
+  }
+  .tile.reachable {
+    background: #81e6d9 !important;
+    color: #1a202c !important;
+    cursor: pointer;
+    box-shadow: inset 0 0 0 2px #234e52;
+  }
+  .passage-badge {
+    font-size: 0.55rem;
+    color: var(--brass);
+    font-weight: normal;
+  }
+  .token-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    justify-content: center;
+    margin-top: 2px;
+  }
+  .suspect-token {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 1.5px solid #fff;
+    font-size: 9px;
+    font-weight: bold;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-shadow: 0 1px 1px #000;
+  }
+  .weapon-tag {
+    font-size: 0.55rem;
+    background: rgba(207, 163, 73, 0.25);
+    border: 1px solid var(--brass);
+    color: var(--parchment);
+    padding: 0 3px;
+    border-radius: 2px;
+    margin-top: 1px;
+  }
+
+  /* CASE LOG */
+  .case-log {
+    width: 100%;
+    margin-top: 14px;
+    background: #120f0d;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    height: 145px;
+    overflow-y: auto;
+    font-size: 0.84rem;
+    line-height: 1.45;
+  }
+  .log-item {
+    border-bottom: 1px solid #241e1a;
+    padding: 3px 0;
+  }
+  .log-clue { color: var(--brass); font-weight: bold; }
+
+  /* RIGHT PANEL: DETECTIVE NOTEBOOK */
+  .notebook-section {
+    background: var(--walnut);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+  }
+  .notebook-section h2 {
+    color: var(--brass);
+    font-size: 1.1rem;
+    margin-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 6px;
+  }
+  .notebook-hint {
+    font-size: 0.78rem;
+    color: #cbbba0;
+    margin-bottom: 8px;
+  }
+  .sheet-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--parchment);
+    color: var(--ink);
+    font-size: 0.82rem;
+    border: 2px solid var(--brass);
+  }
+  .sheet-table th {
+    background: var(--parchment-aged);
+    text-align: left;
+    padding: 5px 8px;
+    border-bottom: 1px solid #b5a384;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+  }
+  .sheet-table td {
+    padding: 4px 8px;
+    border-bottom: 1px solid #d6c6a9;
+    cursor: pointer;
+  }
+  .sheet-table tr:hover { background: #ebe0c8; }
+  .mark-pill {
+    display: inline-block;
+    width: 22px;
+    height: 20px;
+    line-height: 18px;
+    text-align: center;
+    border: 1px solid #8c7b60;
+    background: #fff;
+    border-radius: 3px;
+    font-weight: bold;
+  }
+  .row-X td:first-child { text-decoration: line-through; color: #8c7b60; }
+  .mark-X { color: var(--crimson); }
+  .mark-Q { color: #b7791f; }
+  .mark-V { color: var(--emerald); }
+
+  /* BOTTOM HAND DOCK */
+  .hand-dock {
+    max-width: 1280px;
+    width: calc(100% - 32px);
+    margin: 0 auto 16px;
+    background: var(--walnut);
+    border: 1px solid var(--brass);
+    border-radius: 8px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .cards-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .clue-card {
+    background: var(--parchment);
+    color: var(--ink);
+    border: 2px solid var(--brass);
+    border-radius: 6px;
+    padding: 8px 12px;
+    min-width: 110px;
+    text-align: center;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.4);
+  }
+  .clue-card small {
+    display: block;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    color: #6e5d44;
+    margin-bottom: 2px;
+  }
+  .clue-card strong { font-size: 0.88rem; }
+
+  /* MODAL */
+  .modal-bg {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+  }
+  .modal-card {
+    background: var(--walnut);
+    border: 2px solid var(--brass);
+    border-radius: 8px;
+    padding: 20px;
+    max-width: 420px;
+    width: 92%;
+  }
+  .modal-card h2 { color: var(--brass); margin-bottom: 10px; }
+  .modal-card label { display: block; font-size: 0.85rem; margin-top: 8px; }
+  .modal-card select {
+    width: 100%;
+    padding: 8px;
+    margin-top: 4px;
+    background: var(--parchment);
+    color: var(--ink);
+    border-radius: 4px;
+    font-family: inherit;
+  }
+  .hidden { display: none !important; }
+
+  @media (max-width: 920px) {
+    main { grid-template-columns: 1fr; }
+    .mansion-grid { grid-template-columns: repeat(9, 38px); grid-template-rows: repeat(9, 38px); }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🔍 CLUEDO: TUDOR MANSION</h1>
+  <div class="header-actions">
+    <button onclick="openRules()">How to Play</button>
+    <button onclick="newGame()">New Game</button>
+  </div>
+</header>
+
+<main>
+  <!-- LEFT: BOARD, CONTROLS & CASE LOG -->
+  <section class="board-section">
+    <div class="turn-bar">
+      <div class="turn-info">
+        <strong id="turn-title">Your Turn — Miss Scarlet</strong>
+        <div id="turn-sub">Click "Roll 2d6" or use a Secret Passage</div>
+      </div>
+      <div class="btn-group">
+        <button id="btn-roll" class="btn-gold" onclick="rollDice()">🎲 Roll 2d6</button>
+        <button id="btn-passage" class="btn-dark" onclick="useSecretPassage()" disabled>🗝️ Secret Passage</button>
+        <button id="btn-suggest" class="btn-gold" onclick="openSuggestModal()" disabled>🗣️ Make Suggestion</button>
+        <button id="btn-accuse" class="btn-crimson" onclick="openAccuseModal()" disabled>⚖️ Final Accusation</button>
+        <button id="btn-end" class="btn-dark" onclick="endPlayerTurn()" disabled>End Turn</button>
+      </div>
+    </div>
+
+    <div class="mansion-wrap">
+      <div id="mansion-grid" class="mansion-grid"></div>
+    </div>
+
+    <div class="case-log" id="case-log"></div>
+  </section>
+
+  <!-- RIGHT: DETECTIVE NOTEBOOK -->
+  <aside class="notebook-section">
+    <h2>📋 Detective Notebook</h2>
+    <p class="notebook-hint">Click any card to cycle marks: Blank → ✗ (Eliminated) → ? (Suspected) → ✓ (Confirmed)</p>
+    <table class="sheet-table" id="detective-sheet"></table>
+  </aside>
+</main>
+
+<!-- BOTTOM: DEALT HAND -->
+<footer class="hand-dock">
+  <div>
+    <strong style="color: var(--brass);">Your Dealt Clue Cards</strong>
+Use code with caution.
+These cards are in your hand and cannot be in the Confidential Envelope.
+
+
+const SUSPECTS = ["Miss Scarlet", "Col. Mustard", "Mrs. White", "Rev. Green", "Mrs. Peacock", "Prof. Plum"];
+const WEAPONS = ["Candlestick", "Dagger", "Lead Pipe", "Revolver", "Rope", "Wrench"];
+const ROOM_NAMES = ["Kitchen", "Ballroom", "Conservatory", "Dining Room", "Lounge", "Hall", "Study", "Library", "Billiard Room"];
+// 9x9 Grid Room Definitions (center coordinates + 3x3 footprint)
+const BOARD_ROOMS = [
+{ name: "Kitchen", r: 1, c: 1, passage: "Study" },
+{ name: "Ballroom", r: 1, c: 4, passage: null },
+{ name: "Conservatory", r: 1, c: 7, passage: "Lounge" },
+{ name: "Dining Room", r: 4, c: 1, passage: null },
+{ name: "Grand Staircase", r: 4, c: 4, passage: null, isStairs: true },
+{ name: "Billiard Room", r: 4, c: 7, passage: null },
+{ name: "Lounge", r: 7, c: 1, passage: "Conservatory" },
+{ name: "Hall", r: 7, c: 4, passage: null },
+{ name: "Study", r: 7, c: 7, passage: "Kitchen" }
+];
+// Extra room cards mapped into rooms for 9-room deck
+const ROOM_MAP = {
+"Library": "Study",
+"Billiard Room": "Billiard Room"
+};
+const PLAYERS_INIT = [
+{ name: "Miss Scarlet (You)", short: "S", color: "#c53030", r: 0, c: 3, isHuman: true },
+{ name: "Col. Mustard (AI)", short: "M", color: "#d69e2e", r: 3, c: 0, isHuman: false },
+{ name: "Mrs. Peacock (AI)", short: "P", color: "#2b6cb0", r: 5, c: 8, isHuman: false },
+{ name: "Prof. Plum (AI)", short: "L", color: "#6b46c1", r: 8, c: 5, isHuman: false }
+];
+let game = {};
+// ==================== SETUP & PERSISTENCE ====================
+function newGame() {
+localStorage.removeItem("cluedo_save_v1");
+const sDeck = shuffle([...SUSPECTS]);
+const wDeck = shuffle([...WEAPONS]);
+const rDeck = shuffle([...ROOM_NAMES]);
+const envelope = {
+suspect: sDeck.pop(),
+weapon: wDeck.pop(),
+room: rDeck.pop()
+};
+const remaining = shuffle([...sDeck, ...wDeck, ...rDeck]);
+const players = JSON.parse(JSON.stringify(PLAYERS_INIT)).map(p => ({
+...p,
+hand: [],
+known: []
+}));
+remaining.forEach((card, idx) => {
+const p = players[idx % players.length];
+p.hand.push(card);
+p.known.push(card);
+});
+// Place weapons in rooms
+const physicalRooms = BOARD_ROOMS.filter(r => !r.isStairs);
+const weaponLocations = {};
+WEAPONS.forEach((w, idx) => {
+weaponLocations[w] = physicalRooms[idx % physicalRooms.length].name;
+});
+const notes = {};
+players.hand.forEach(c => { notes[c] = "X"; });
+game = {
+envelope,
+players,
+weaponLocations,
+turn: 0,
+hasRolled: false,
+hasSuggested: false,
+reachable: [],
+notes,
+logs: ["A murder has occurred in Tudor Mansion! Roll 2d6 to explore rooms and gather clues."],
+gameOver: false,
+humanEliminated: false
+};
+saveGame();
+renderAll();
+}
+function loadGame() {
+const raw = localStorage.getItem("cluedo_save_v1");
+if (raw) {
+try {
+game = JSON.parse(raw);
+game.reachable = [];
+renderAll();
+return;
+} catch (e) {}
+}
+newGame();
+}
+function saveGame() {
+const copy = { ...game, reachable: [] };
+localStorage.setItem("cluedo_save_v1", JSON.stringify(copy));
+}
+function shuffle(arr) {
+return arr.sort(() => Math.random() - 0.5);
+}
+// ==================== BOARD & MOVEMENT ====================
+function getRoomAt(r, c) {
+return BOARD_ROOMS.find(rm => Math.abs(rm.r - r) <= 1 && Math.abs(rm.c - c) <= 1);
+}
+function renderBoard() {
+const grid = document.getElementById("mansion-grid");
+grid.innerHTML = "";
+for (let r = 0; r < 9; r++) {
+for (let c = 0; c < 9; c++) {
+const tile = document.createElement("div");
+tile.className = "tile";
+const room = getRoomAt(r, c);
+if (room) {
+tile.classList.add(room.isStairs ? "stairs" : "room");
+if (room.r === r && room.c === c) {
+tile.innerHTML = <span>${room.name}</span>;
+if (room.passage) {
+tile.innerHTML += <span class="passage-badge">⇄ ${room.passage}</span>;
+}
+// Show weapons in this room
+const wHere = Object.entries(game.weaponLocations)
+.filter(([_, rmName]) => rmName === room.name)
+.map(([wName]) => wName);
+if (wHere.length) {
+tile.innerHTML += <div class="weapon-tag">${wHere.join(", ")}</div>;
+}
+}
+}
+if (game.reachable.some(pos => pos.r === r && pos.c === c)) {
+tile.classList.add("reachable");
+tile.onclick = () => moveHuman(r, c);
+}
+// Render player tokens
+const tokenRow = document.createElement("div");
+tokenRow.className = "token-row";
+game.players.forEach(p => {
+if (p.r === r && p.c === c) {
+const tok = document.createElement("div");
+tok.className = "suspect-token";
+tok.style.background = p.color;
+tok.title = p.name;
+tok.textContent = p.short;
+tokenRow.appendChild(tok);
+}
+});
+tile.appendChild(tokenRow);
+grid.appendChild(tile);
+}
+}
+}
+function rollDice() {
+if (game.turn !== 0 || game.hasRolled || game.gameOver) return;
+const d1 = Math.floor(Math.random() * 6) + 1;
+const d2 = Math.floor(Math.random() * 6) + 1;
+const total = d1 + d2;
+game.hasRolled = true;
+document.getElementById("turn-sub").textContent = Rolled ${d1} + ${d2} = ${total}. Click a highlighted tile to move.;
+const me = game.players;
+game.reachable = getReachableTiles(me.r, me.c, total);
+renderBoard();
+updateButtons();
+}
+function getReachableTiles(startR, startC, steps) {
+const visited = new Set([${startR},${startC}]);
+const queue = [{ r: startR, c: startC, dist: 0 }];
+const valid = [];
+const startRoom = getRoomAt(startR, startC);
+while (queue.length) {
+const curr = queue.shift();
+if (curr.dist > 0) valid.push({ r: curr.r, c: curr.c });
+if (curr.dist === steps) continue;
+const dirs = [, [-1, 0],, [0, -1]];
+for (const [dr, dc] of dirs) {
+const nr = curr.r + dr;
+const nc = curr.c + dc;
+if (nr < 0 || nr >= 9 || nc < 0 || nc >= 9) continue;
+const key = ${nr},${nc};
+if (visited.has(key)) continue;
+// Cannot pass through occupied hallway squares
+const occupied = game.players.some(p => p.r === nr && p.c === nc);
+if (occupied) continue;
+visited.add(key);
+const nextRoom = getRoomAt(nr, nc);
+// Entering a new room stops movement immediately
+if (nextRoom && (!startRoom || nextRoom.name !== startRoom.name)) {
+valid.push({ r: nr, c: nc });
+} else {
+queue.push({ r: nr, c: nc, dist: curr.dist + 1 });
+}
+}
+}
+return valid;
+}
+function moveHuman(r, c) {
+const me = game.players;
+me.r = r;
+me.c = c;
+game.reachable = [];
+const room = getRoomAt(r, c);
+document.getElementById("turn-sub").textContent = room
+? Entered ${room.name}.
+: "Moved into the hallway.";
+saveGame();
+renderBoard();
+updateButtons();
+}
+function useSecretPassage() {
+const me = game.players;
+const currentRoom = getRoomAt(me.r, me.c);
+if (!currentRoom || !currentRoom.passage) return;
+const dest = BOARD_ROOMS.find(r => r.name === currentRoom.passage);
+me.r = dest.r;
+me.c = dest.c;
+game.hasRolled = true;
+addLog(🗝️ You used the Secret Passage from ${currentRoom.name} to ${dest.name}!);
+saveGame();
+renderBoard();
+updateButtons();
+}
+// ==================== SUGGESTIONS & ACCUSATIONS ====================
+function openSuggestModal() {
+const me = game.players;
+const room = getRoomAt(me.r, me.c);
+if (!room || room.isStairs) return;
+// Include Library option if inside Study
+const roomChoices = room.name === "Study" ? ["Study", "Library"] : [room.name];
+const box = document.getElementById("modal-card");
+box.innerHTML = `
+🗣️ Make a Suggestion
+Room:
+${roomChoices.map(r => <option>${r}</option>).join("")}
+Suspect:
+${SUSPECTS.map(s => <option>${s}</option>).join("")}
+Weapon:
+${WEAPONS.map(w => <option>${w}</option>).join("")}
+
+Cancel
+Confirm Suggestion
+
+`;
+document.getElementById("modal-bg").classList.remove("hidden");
+}
+function submitSuggestion() {
+const roomCard = document.getElementById("sug-room").value;
+const suspect = document.getElementById("sug-suspect").value;
+const weapon = document.getElementById("sug-weapon").value;
+closeModal();
+const me = game.players;
+const currentRoom = getRoomAt(me.r, me.c);
+// Pull suspect & weapon into the room
+const targetPlayer = game.players.find(p => p.name.startsWith(suspect));
+if (targetPlayer && currentRoom) {
+targetPlayer.r = currentRoom.r;
+targetPlayer.c = currentRoom.c;
+}
+if (currentRoom) {
+game.weaponLocations[weapon] = currentRoom.name;
+}
+game.hasSuggested = true;
+resolveDisproval(0, suspect, weapon, roomCard);
+saveGame();
+renderBoard();
+updateButtons();
+}
+function resolveDisproval(suggesterIdx, suspect, weapon, roomCard) {
+const suggester = game.players[suggesterIdx];
+addLog(${suggester.name} suggests: ${suspect} with the ${weapon} in the ${roomCard}.);
+for (let offset = 1; offset < game.players.length; offset++) {
+const idx = (suggesterIdx + offset) % game.players.length;
+const checker = game.players[idx];
+const matches = checker.hand.filter(c => c === suspect || c === weapon || c === roomCard);
+if (matches.length > 0) {
+const shownCard = matches;
+if (!suggester.known.includes(shownCard)) {
+suggester.known.push(shownCard);
+}
+if (suggesterIdx === 0) {
+game.notes[shownCard] = "X";
+renderSheet();
+addLog(🔍 ${checker.name} secretly showed you: ${shownCard} (crossed off on sheet)., true);
+showPrivateRevealModal(checker.name, shownCard);
+} else {
+addLog(🤫 ${checker.name} disproved ${suggester.name}'s suggestion.);
+}
+return;
+}
+}
+addLog(⚠️ Nobody could disprove the suggestion!, true);
+}
+function showPrivateRevealModal(playerName, card) {
+const box = document.getElementById("modal-card");
+box.innerHTML = `
+🔍 Evidence Revealed
+${playerName} secretly showed you the card:
+Disproved Clue
+${card}
+Automatically marked ✗ on your Detective Notebook.
+Continue
+`;
+document.getElementById("modal-bg").classList.remove("hidden");
+}
+function openAccuseModal() {
+const box = document.getElementById("modal-card");
+box.innerHTML = `
+⚖️ Final Accusation
+Open the Confidential Envelope. If wrong, you are eliminated from making further moves or accusations!
+Suspect:
+${SUSPECTS.map(s => <option>${s}</option>).join("")}
+Weapon:
+${WEAPONS.map(w => <option>${w}</option>).join("")}
+Room:
+${ROOM_NAMES.map(r => <option>${r}</option>).join("")}
+
+Cancel
+Open Envelope
+
+`;
+document.getElementById("modal-bg").classList.remove("hidden");
+}
+function submitAccusation() {
+const s = document.getElementById("acc-suspect").value;
+const w = document.getElementById("acc-weapon").value;
+const r = document.getElementById("acc-room").value;
+const env = game.envelope;
+const won = (s === env.suspect && w === env.weapon && r === env.room);
+const box = document.getElementById("modal-card");
+if (won) {
+game.gameOver = true;
+addLog(🏆 YOU SOLVED THE CASE! (${s}, ${w}, ${r}), true);
+box.innerHTML = `
+🏆 CASE SOLVED!
+Your accusation was completely right!
+\({env.suspect} • \){env.weapon} • ${env.room}
+Play New Case
+; } else { game.humanEliminated = true; addLog(💀 Your accusation (${s}, ${w}, ${r}) was WRONG! You are eliminated from moving or accusing., true); box.innerHTML = 
+💀 FALSE ACCUSATION
+The cards in the Confidential Envelope did not match your accusation. You are eliminated from moving or accusing, but remain at the table to disprove AI suggestions.
+Watch AI Finish
+`;
+}
+saveGame();
+updateButtons();
+}
+// ==================== AI TURNS ====================
+function endPlayerTurn() {
+game.reachable = [];
+renderBoard();
+advanceTurn();
+}
+function advanceTurn() {
+if (game.gameOver) return;
+game.turn = (game.turn + 1) % game.players.length;
+game.hasRolled = false;
+game.hasSuggested = false;
+const active = game.players[game.turn];
+document.getElementById("turn-title").textContent = ${active.name}'s Turn;
+if (active.isHuman) {
+if (game.humanEliminated) {
+setTimeout(advanceTurn, 400);
+return;
+}
+document.getElementById("turn-sub").textContent = Click "Roll 2d6" or use a Secret Passage;
+updateButtons();
+} else {
+document.getElementById("turn-sub").textContent = ${active.name} is investigating...;
+updateButtons();
+setTimeout(() => runAiTurn(game.turn), 750);
+}
+}
+function runAiTurn(idx) {
+if (game.gameOver) return;
+const ai = game.players[idx];
+const roll = (Math.floor(Math.random() * 6) + 1) + (Math.floor(Math.random() * 6) + 1);
+const moves = getReachableTiles(ai.r, ai.c, roll);
+const unelimRooms = ROOM_NAMES.filter(r => !ai.known.includes(r));
+const roomMoves = moves.filter(pos => {
+const rm = getRoomAt(pos.r, pos.c);
+return rm && !rm.isStairs;
+});
+if (roomMoves.length > 0) {
+const pick = roomMoves[Math.floor(Math.random() * roomMoves.length)];
+ai.r = pick.r;
+ai.c = pick.c;
+renderBoard();
+const rm = getRoomAt(ai.r, ai.c);
+const roomCard = rm.name === "Study" && unelimRooms.includes("Library") ? "Library" : rm.name;
+const unkS = SUSPECTS.filter(s => !ai.known.includes(s));
+const unkW = WEAPONS.filter(w => !ai.known.includes(w));
+const sPick = unkS[Math.floor(Math.random() * unkS.length)] || SUSPECTS;
+const wPick = unkW[Math.floor(Math.random() * unkW.length)] || WEAPONS;
+game.weaponLocations[wPick] = rm.name;
+renderBoard();
+resolveDisproval(idx, sPick, wPick, roomCard);
+// Check if AI narrowed down all 3 categories
+const remS = SUSPECTS.filter(s => !ai.known.includes(s));
+const remW = WEAPONS.filter(w => !ai.known.includes(w));
+const remR = ROOM_NAMES.filter(r => !ai.known.includes(r));
+if (remS.length === 1 && remW.length === 1 && remR.length === 1) {
+game.gameOver = true;
+addLog(🏆 ${ai.name} solved the mystery! (${remS}, ${remW}, ${remR}), true);
+saveGame();
+updateButtons();
+return;
+}
+} else if (moves.length > 0) {
+const pick = moves[Math.floor(Math.random() * moves.length)];
+ai.r = pick.r;
+ai.c = pick.c;
+renderBoard();
+}
+saveGame();
+setTimeout(advanceTurn, 700);
+}
+// ==================== UI RENDERING ====================
+function updateButtons() {
+const isMyTurn = game.turn === 0 && !game.gameOver && !game.humanEliminated;
+const me = game.players;
+const room = getRoomAt(me.r, me.c);
+document.getElementById("btn-roll").disabled = !isMyTurn || game.hasRolled;
+document.getElementById("btn-passage").disabled = !isMyTurn || game.hasRolled || !room || !room.passage;
+document.getElementById("btn-suggest").disabled = !isMyTurn || !room || room.isStairs || game.hasSuggested;
+document.getElementById("btn-accuse").disabled = !isMyTurn || !room || !room.isStairs;
+document.getElementById("btn-end").disabled = !isMyTurn || !game.hasRolled;
+}
+function renderSheet() {
+const table = document.getElementById("detective-sheet");
+const groups = [
+{ label: "SUSPECTS", list: SUSPECTS },
+{ label: "WEAPONS", list: WEAPONS },
+{ label: "ROOMS", list: ROOM_NAMES }
+];
+let html = "";
+groups.forEach(g => {
+html += <tr><th colspan="2">${g.label}</th></tr>;
+g.list.forEach(item => {
+const mark = game.notes[item] || "";
+const rowCls = mark === "X" ? "row-X" : "";
+const markCls = mark === "X" ? "mark-X" : (mark === "?" ? "mark-Q" : (mark === "✓" ? "mark-V" : ""));
+html += `
+${item}
+${mark}
+`;
+});
+});
+table.innerHTML = html;
+}
+function toggleNote(item) {
+const cycle = ["", "X", "?", "✓"];
+const next = cycle[(cycle.indexOf(game.notes[item] || "") + 1) % cycle.length];
+game.notes[item] = next;
+saveGame();
+renderSheet();
+}
+function renderHand() {
+const dock = document.getElementById("hand-cards");
+dock.innerHTML = game.players.hand.map(card => {
+const type = SUSPECTS.includes(card) ? "Suspect" : (WEAPONS.includes(card) ? "Weapon" : "Room");
+return <div class="clue-card"><small>${type}</small><strong>${card}</strong></div>;
+}).join("");
+}
+function addLog(text, isClue = false) {
+game.logs.unshift({ text, isClue });
+renderLogs();
+}
+function renderLogs() {
+const box = document.getElementById("case-log");
+box.innerHTML = game.logs.map(entry => {
+const obj = typeof entry === "string" ? { text: entry, isClue: false } : entry;
+return <div class="log-item ${obj.isClue ? "log-clue" : ""}">${obj.text}</div>;
+}).join("");
+}
+function renderAll() {
+renderBoard();
+renderSheet();
+renderHand();
+renderLogs();
+updateButtons();
+}
+function openRules() {
+const box = document.getElementById("modal-card");
+box.innerHTML = `
+Official Cluedo Rules
+• Goal: Figure out which 1 Suspect, 1 Weapon, and 1 Room are sealed in the Confidential Envelope.
+• Move: Click Roll 2d6 and move horizontally or vertically (no diagonals). Entering a room ends your movement. Corner rooms have Secret Passages.
+• Suggest: Inside a room, suggest a Suspect, Weapon, and Room. The first player clockwise holding a matching card secretly reveals one to you.
+• Accuse: Walk onto the central Grand Staircase to make your Final Accusation and win the game!
+Got It
+`;
+document.getElementById("modal-bg").classList.remove("hidden");
+}
+function closeModal() {
+document.getElementById("modal-bg").classList.add("hidden");
+}
+loadGame();
